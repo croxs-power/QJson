@@ -4,6 +4,7 @@
 
 json_interface::json_interface():m_json(NULL)
 {
+    //qDebug() << "create 1";
 }
 
 json_interface::json_interface(cJSON *json):m_json(NULL)
@@ -20,6 +21,7 @@ json_interface::json_interface(QByteArray json):m_json(NULL)
 {
     if(!json.isEmpty())
         parse(json);
+    //qDebug() << "create 2";
 }
 
 json_interface::json_interface(const json_interface *obj)
@@ -28,6 +30,7 @@ json_interface::json_interface(const json_interface *obj)
     {
         parse(obj->json_string());
     }
+    //qDebug() << "create 3";
 }
 
 json_interface::json_interface(const json_interface &obj)
@@ -36,6 +39,7 @@ json_interface::json_interface(const json_interface &obj)
     {
         parse(obj.json_string());
     }
+    //qDebug() << "create 4";
 }
 
 json_interface::~json_interface()
@@ -61,6 +65,7 @@ json_interface &json_interface::operator=(const json_interface &json)
             clear();
         parse(json.json_string());
     }
+    //qDebug() << "create =";
     return (*this);
 }
 
@@ -119,6 +124,7 @@ void json_interface::clear()
 {
     if(m_json != NULL)
     {
+        //qDebug() << "release";
         cJSON_Delete(m_json);
         m_json = NULL;
     }
@@ -169,7 +175,7 @@ json_object::json_object(const json_object &obj):json_interface(obj)
 
 }
 
-bool json_object::insert(const QString &key, const QVariant &value)
+bool json_object::insert(const QString &key, const json_value &value)
 {
     Create(json_type_object);
 
@@ -190,21 +196,6 @@ bool json_object::insert(const QString &key, const QVariant &value)
         }
     }
         break;
-    case QVariant::UInt:
-    {
-        if(exist(key))
-        {
-            cJSON *item = cJSON_CreateNumber(value.toUInt());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
-        }
-        else
-        {
-            cJSON *item = cJSON_CreateNumber(value.toUInt());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
-        }
-    }
-        break;
-    case 38:
     case QVariant::Double:
     {
         if(exist(key))
@@ -303,9 +294,9 @@ bool json_object::insert(const QString &key, const json_array &value)
     return  true;
 }
 
-QVariant json_object::value(const QString &key)
+json_value json_object::value(const QString &key)
 {
-    QVariant value;
+    json_value value;
 
     if(!is_empty() && exist(key))
     {
@@ -417,7 +408,7 @@ json_array::json_array(const json_array &obj):json_interface(obj)
 
 }
 
-bool json_array::append(const QVariant &value)
+bool json_array::append(const json_value &value)
 {
     Create(json_type_array);
 
@@ -430,13 +421,6 @@ bool json_array::append(const QVariant &value)
         cJSON_AddItemToArray(m_json, item);
     }
         break;
-    case QVariant::UInt:
-    {
-        cJSON *item = cJSON_CreateNumber(value.toUInt());
-        cJSON_AddItemToArray(m_json, item);
-    }
-        break;
-    case 38:
     case QVariant::Double:
     {
         cJSON *item = cJSON_CreateNumber(value.toDouble());
@@ -510,9 +494,9 @@ void json_array::remove(int index)
     }
 }
 
-QVariant json_array::value(int index) const
+json_value json_array::value(int index) const
 {
-    QVariant value;
+    json_value value;
     if(is_empty())
         return value;
 
@@ -575,7 +559,7 @@ json_array json_array::array(int index) const
     return json_array(item);
 }
 
-bool json_array::replace(int index, const QVariant &value)
+bool json_array::replace(int index, const json_value &value)
 {
     if(is_empty())
         return false;
@@ -591,12 +575,6 @@ bool json_array::replace(int index, const QVariant &value)
         item = cJSON_CreateNumber(value.toInt());
     }
         break;
-    case QVariant::UInt:
-    {
-        item = cJSON_CreateNumber(value.toUInt());
-    }
-        break;
-    case 38:
     case QVariant::Double:
     {
         item = cJSON_CreateNumber(value.toDouble());
@@ -653,4 +631,74 @@ bool json_array::replace(int index, const json_array &obj)
         return false;
 
     return cJSON_ReplaceItemInArray(m_json, index, item);
+}
+
+json_value::json_value()
+{
+
+}
+
+json_value::json_value(bool b)
+{
+    m_value = b;
+}
+
+json_value::json_value(double n)
+{
+    m_value = n;
+}
+
+json_value::json_value(const QString &s)
+{
+    m_value = s;
+}
+
+json_value::json_value(const char *s)
+{
+    m_value = QString(s);
+}
+
+json_value::json_value(const json_value &other)
+{
+    m_value = other.m_value;
+}
+
+json_value::json_value(int n)
+{
+    m_value = n;
+}
+
+json_value::json_value(qint64 n)
+{
+    m_value = n;
+}
+
+bool json_value::toBool() const
+{
+    return m_value.toBool();
+}
+
+double json_value::toDouble() const
+{
+    return m_value.toDouble();
+}
+
+int json_value::toInt() const
+{
+    return m_value.toInt();
+}
+
+QString json_value::toString() const
+{
+    return m_value.toString();
+}
+
+QVariant::Type json_value::type() const
+{
+    return m_value.type();
+}
+
+bool json_value::is_empty() const
+{
+    return m_value.isNull();
 }

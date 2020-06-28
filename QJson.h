@@ -10,6 +10,7 @@ struct cJSON;
 class json_object;
 class json_array;
 class json_attribute;
+class json_value;
 
 class json_interface
 {
@@ -18,8 +19,8 @@ protected:
 
 public:
     json_interface();
-    json_interface(cJSON *json);
-    json_interface(QByteArray json);
+    explicit json_interface(cJSON *json);
+    explicit json_interface(QByteArray json);
     json_interface(const json_interface* obj);
     json_interface(const json_interface& obj);
     virtual ~json_interface();
@@ -50,21 +51,45 @@ protected:
     QString m_errorMsg;
 };
 
+class json_value
+{
+public:
+    json_value();
+    json_value(bool b);
+    json_value(double n);
+    json_value(const QString & s);
+    json_value(const char * s);
+    json_value(const json_value & other);
+    json_value(int n);
+    json_value(qint64 n);
+
+    bool toBool() const;
+    double toDouble() const;
+    int toInt() const;
+    QString toString() const;
+
+    QVariant::Type type() const;
+    bool is_empty() const;
+
+protected:
+    QVariant m_value;
+};
+
 class json_object: public json_interface
 {
 public:
     json_object();
-    json_object(cJSON *json);
-    json_object(QByteArray json);
+    explicit json_object(cJSON *json);
+    explicit json_object(QByteArray json);
     json_object(const json_object* obj);
     json_object(const json_object& obj);
 
     //if key no exist add, or replace it
-    bool insert(const QString &key, const QVariant &value);
+    bool insert(const QString &key, const json_value &value);
     bool insert(const QString &key, const json_object &value);
     bool insert(const QString &key, const json_array &value);
 
-    QVariant value(const QString &key);
+    json_value value(const QString &key);
     json_object object(const QString &key);
     json_array array(const QString &key);
 
@@ -79,23 +104,23 @@ class json_array: public json_interface
 {
 public:
     json_array();
-    json_array(cJSON *json);
-    json_array(QByteArray json);
+    explicit json_array(cJSON *json);
+    explicit json_array(QByteArray json);
     json_array(const json_array* obj);
     json_array(const json_array& obj);
 
-    bool append(const QVariant &value);
+    bool append(const json_value &value);
     bool append(const json_object &obj);
     bool append(const json_array &obj);
 
     int size() const;
     void remove(int index);
 
-    QVariant value(int index) const;
+    json_value value(int index) const;
     json_object object(int index) const;
     json_array array(int index) const;
 
-    bool replace(int index, const QVariant &value);
+    bool replace(int index, const json_value &value);
     bool replace(int index, const json_object &obj);
     bool replace(int index, const json_array &obj);
 };
