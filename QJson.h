@@ -54,6 +54,16 @@ protected:
 class json_value
 {
 public:
+    enum Type_Enum
+    {
+        Type_Unvalid,
+        Type_Bool,
+        Type_Int,
+        Type_Double,
+        Type_String,
+        Type_Object,
+        Type_Array
+    };
     json_value();
     json_value(bool b);
     json_value(double n);
@@ -62,16 +72,21 @@ public:
     json_value(const json_value & other);
     json_value(int n);
     json_value(qint64 n);
+    json_value(const json_object &obj);
+    json_value(const json_array &a);
 
     bool toBool() const;
     double toDouble() const;
     int toInt() const;
     QString toString() const;
+    json_object toObject() const;
+    json_array toArray() const;
 
-    QVariant::Type type() const;
+    Type_Enum type() const;
     bool is_empty() const;
 
 protected:
+    Type_Enum m_type;
     QVariant m_value;
 };
 
@@ -86,8 +101,6 @@ public:
 
     //if key no exist add, or replace it
     bool insert(const QString &key, const json_value &value);
-    bool insert(const QString &key, const json_object &value);
-    bool insert(const QString &key, const json_array &value);
 
     json_value value(const QString &key);
     json_object object(const QString &key);
@@ -110,8 +123,6 @@ public:
     json_array(const json_array& obj);
 
     bool append(const json_value &value);
-    bool append(const json_object &obj);
-    bool append(const json_array &obj);
 
     int size() const;
     void remove(int index);
@@ -121,8 +132,6 @@ public:
     json_array array(int index) const;
 
     bool replace(int index, const json_value &value);
-    bool replace(int index, const json_object &obj);
-    bool replace(int index, const json_array &obj);
 };
 
 #endif // PUGIJSON_H
