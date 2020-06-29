@@ -4,7 +4,6 @@
 
 json_interface::json_interface():m_json(NULL)
 {
-    //qDebug() << "create 1";
 }
 
 json_interface::json_interface(cJSON *json):m_json(NULL)
@@ -21,25 +20,22 @@ json_interface::json_interface(QByteArray json):m_json(NULL)
 {
     if(!json.isEmpty())
         parse(json);
-    //qDebug() << "create 2";
 }
 
-json_interface::json_interface(const json_interface *obj)
+json_interface::json_interface(const json_interface *obj):m_json(NULL)
 {
     if(obj != NULL && !obj->is_empty())
     {
         parse(obj->json_string());
     }
-    //qDebug() << "create 3";
 }
 
-json_interface::json_interface(const json_interface &obj)
+json_interface::json_interface(const json_interface &obj):m_json(NULL)
 {
     if(!obj.is_empty())
     {
         parse(obj.json_string());
     }
-    //qDebug() << "create 4";
 }
 
 json_interface::~json_interface()
@@ -59,13 +55,11 @@ bool json_interface::operator !() const
 
 json_interface &json_interface::operator=(const json_interface &json)
 {
+    clear();
     if(!json.is_empty())
     {
-        if(m_json != NULL)
-            clear();
         parse(json.json_string());
     }
-    //qDebug() << "create =";
     return (*this);
 }
 
@@ -124,7 +118,6 @@ void json_interface::clear()
 {
     if(m_json != NULL)
     {
-        //qDebug() << "release";
         cJSON_Delete(m_json);
         m_json = NULL;
     }
