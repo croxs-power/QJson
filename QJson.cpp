@@ -347,7 +347,7 @@ bool json_object::insert(const QString &key, const json_value &value)
         break;
     case json_value::Type_Object:
     {
-        cJSON *item = value.toObject().internal_object();
+        cJSON *item = parse_create(value.toObject().json_string());
         if(item != NULL)
         {
             if(exist(key))
@@ -356,7 +356,7 @@ bool json_object::insert(const QString &key, const json_value &value)
             }
             else
             {
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+                cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
             }
         }
         else

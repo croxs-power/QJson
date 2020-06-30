@@ -32,7 +32,6 @@ public:
     bool operator==(const json_interface& json) const;
 
     bool parse(QByteArray json_string);
-    cJSON *parse_create(QByteArray json_string);
     bool is_empty() const;
     QByteArray json_string() const;
     QString format_string() const;
@@ -47,6 +46,7 @@ protected:
         json_type_array
     };
     void create(json_type_enum type);
+    cJSON *parse_create(QByteArray json_string);
 
     cJSON *m_json;
     QString m_errorMsg;
