@@ -55,7 +55,6 @@ bool json_interface::operator !() const
 
 json_interface &json_interface::operator=(const json_interface &json)
 {
-    clear();
     if(!json.is_empty())
     {
         parse(json.json_string());
@@ -70,7 +69,8 @@ bool json_interface::operator==(const json_interface &json) const
 
 bool json_interface::parse(QByteArray json_string)
 {
-    m_json = cJSON_Parse(json_string.data());
+    clear();
+    m_json = cJSON_Parse((QString::fromUtf8(json_string.data())).toLocal8Bit());
     if(m_json == NULL)
     {
         m_errorMsg = cJSON_GetErrorPtr();
@@ -80,6 +80,12 @@ bool json_interface::parse(QByteArray json_string)
     {
         return true;
     }
+}
+
+cJSON *json_interface::parse_create(QByteArray json_string)
+{
+    cJSON *json = cJSON_Parse((QString::fromUtf8(json_string.data())).toLocal8Bit());
+    return  json;
 }
 
 bool json_interface::is_empty() const
@@ -96,7 +102,7 @@ QByteArray json_interface::json_string() const
     if(!is_empty())
     {
         char *str = cJSON_PrintUnformatted(m_json);
-        ar = str;
+        ar = QString::fromLocal8Bit(str).toUtf8();
         free(str);
     }
     return  ar;
@@ -107,9 +113,9 @@ QString json_interface::format_string() const
     QString json_str;
     if(!is_empty())
     {
-        char *string = cJSON_PrintUnformatted(m_json);
-        json_str = QString::fromLocal8Bit(string);
-        free(string);
+        char *str = cJSON_PrintUnformatted(m_json);
+        json_str = QString::fromLocal8Bit(str);
+        free(str);
     }
     return  json_str;
 }
@@ -128,7 +134,7 @@ cJSON *json_interface::internal_object() const
     return m_json;
 }
 
-void json_interface::Create(json_type_enum type)
+void json_interface::create(json_type_enum type)
 {
     if(m_json != NULL)
         return;
@@ -278,7 +284,7 @@ bool json_object::insert(const QString &key, const json_value &value)
     if(value.is_empty())
         return  false;
 
-    Create(json_type_object);
+    create(json_type_object);
 
     bool ret = true;
     switch (value.type())
@@ -341,7 +347,7 @@ bool json_object::insert(const QString &key, const json_value &value)
         break;
     case json_value::Type_Object:
     {
-        cJSON *item = cJSON_Parse(value.toObject().json_string().data());
+        cJSON *item = value.toObject().internal_object();
         if(item != NULL)
         {
             if(exist(key))
@@ -362,7 +368,7 @@ bool json_object::insert(const QString &key, const json_value &value)
         break;
     case json_value::Type_Array:
     {
-        cJSON *item = cJSON_Parse(value.toArray().json_string().data());
+        cJSON *item = parse_create(value.toArray().json_string());
         if(item != NULL)
         {
             if(exist(key))
@@ -519,7 +525,7 @@ json_array::json_array(const json_array &obj):json_interface(obj)
 
 bool json_array::append(const json_value &value)
 {
-    Create(json_type_array);
+    create(json_type_array);
 
     bool ret = true;
     switch (value.type())
@@ -550,7 +556,7 @@ bool json_array::append(const json_value &value)
         break;
     case json_value::Type_Object:
     {
-        cJSON *item = cJSON_Parse(value.toObject().json_string().data());
+        cJSON *item = parse_create(value.toObject().json_string());
         if(item != NULL)
         {
             cJSON_AddItemToArray(m_json, item);
@@ -564,7 +570,7 @@ bool json_array::append(const json_value &value)
         break;
     case json_value::Type_Array:
     {
-        cJSON *item = cJSON_Parse(value.toArray().json_string().data());
+        cJSON *item = parse_create(value.toArray().json_string());
         if(item != NULL)
         {
             cJSON_AddItemToArray(m_json, item);
@@ -713,12 +719,12 @@ bool json_array::replace(int index, const json_value &value)
         break;
     case json_value::Type_Object:
     {
-        item = cJSON_Parse(value.toObject().json_string().data());
+        item = parse_create(value.toObject().json_string());
     }
         break;
     case json_value::Type_Array:
     {
-        item = cJSON_Parse(value.toArray().json_string().data());
+        item = parse_create(value.toArray().json_string());
     }
         break;
     default:
