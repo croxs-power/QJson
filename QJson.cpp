@@ -175,7 +175,7 @@ json_value::json_value(const QString &s)
 json_value::json_value(const char *s)
 {
     m_type = Type_String;
-    m_value = QString(s);
+    m_value = (s);
 }
 
 json_value::json_value(const json_value &other)
@@ -416,10 +416,7 @@ json_value json_object::value(const QString &key)
         }
         else if(cJSON_IsNumber(item))
         {
-            if(item->valuedouble - (int)item->valuedouble > 0)
-                value = item->valuedouble;
-            else
-                value = (int)item->valuedouble;
+            value = item->valuedouble;
         }
         else if(cJSON_IsString(item))
         {
@@ -633,10 +630,7 @@ json_value json_array::value(int index) const
     }
     else if(cJSON_IsNumber(item))
     {
-        if(item->valuedouble - (int)item->valuedouble > 0)
-            value = item->valuedouble;
-        else
-            value = (int)item->valuedouble;
+        value = item->valuedouble;
     }
     else if(cJSON_IsString(item))
     {
@@ -684,6 +678,22 @@ json_array json_array::array(int index) const
         return obj;
 
     return json_array(item);
+}
+
+json_value json_array::first() const
+{
+    if(is_empty())
+        return json_value();
+    else
+        return value(0);
+}
+
+json_value json_array::last() const
+{
+    if(is_empty())
+        return json_value();
+    else
+        return value(size() - 1);
 }
 
 bool json_array::replace(int index, const json_value &value)
