@@ -1,4 +1,4 @@
-﻿#ifndef QJSON_HEADER_20200623
+#ifndef QJSON_HEADER_20200623
 #define QJSON_HEADER_20200623
 
 #include <QObject>
@@ -60,6 +60,7 @@ public:
         Type_Unvalid,
         Type_Bool,
         Type_Int,
+        Type_UInt,
         Type_Double,
         Type_String,
         Type_Object,
@@ -72,6 +73,7 @@ public:
     json_value(const char * s);
     json_value(const json_value & other);
     json_value(int n);
+    json_value(quint32 n);
     json_value(qint64 n);
     json_value(const json_object &obj);
     json_value(const json_array &a);
@@ -79,6 +81,7 @@ public:
     bool toBool() const;
     double toDouble() const;
     int toInt() const;
+    quint32 toUint() const;
     QString toString() const;
     json_object toObject() const;
     json_array toArray() const;
@@ -131,6 +134,9 @@ public:
     json_value value(int index) const;
     json_object object(int index) const;
     json_array array(int index) const;
+
+    json_value first() const;
+    json_value last() const;
 
     bool replace(int index, const json_value &value);
 };
