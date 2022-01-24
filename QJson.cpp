@@ -1,4 +1,4 @@
-﻿#include "QJson.h"
+#include "QJson.h"
 #include <QDebug>
 #include "cJSON.h"
 
@@ -190,6 +190,12 @@ json_value::json_value(int n)
     m_value = n;
 }
 
+json_value::json_value(quint32 n)
+{
+    m_type = Type_UInt;
+    m_value = n;
+}
+
 json_value::json_value(qint64 n)
 {
     m_type = Type_Int;
@@ -227,6 +233,11 @@ double json_value::toDouble() const
 int json_value::toInt() const
 {
     return m_value.toInt();
+}
+
+quint32 json_value::toUint() const
+{
+    return m_value.toUInt();
 }
 
 QString json_value::toString() const
@@ -299,6 +310,20 @@ bool json_object::insert(const QString &key, const json_value &value)
         else
         {
             cJSON *item = cJSON_CreateNumber(value.toInt());
+            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+        }
+    }
+        break;
+    case json_value::Type_UInt:
+    {
+        if(exist(key))
+        {
+            cJSON *item = cJSON_CreateNumber(value.toUint());
+            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+        }
+        else
+        {
+            cJSON *item = cJSON_CreateNumber(value.toUint());
             cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
         }
     }
@@ -432,6 +457,10 @@ json_value json_object::value(const QString &key)
             cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
             value = json_array(item);
         }
+        else
+        {
+            qDebug() << "unknow value";
+        }
     }
     return  value;
 }
@@ -530,6 +559,12 @@ bool json_array::append(const json_value &value)
     case json_value::Type_Int:
     {
         cJSON *item = cJSON_CreateNumber(value.toInt());
+        cJSON_AddItemToArray(m_json, item);
+    }
+        break;
+    case json_value::Type_UInt:
+    {
+        cJSON *item = cJSON_CreateNumber(value.toUint());
         cJSON_AddItemToArray(m_json, item);
     }
         break;
