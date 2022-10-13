@@ -1,3 +1,12 @@
+/********************
+ * lr-221013
+ * 乱码问题处理原则，
+ * 1. 所有字符都是UTF-8格式
+ * 2. QByteArray直接存储原始数据，也就是UTF-8编码
+ * 3. QString显示的话，指定从UTF8编码
+ * 4. QString存储采用QByteArray类型存储
+ ****************/
+
 #include "QJson.h"
 #include <QDebug>
 #include "cJSON.h"
@@ -70,7 +79,8 @@ bool json_interface::operator==(const json_interface &json) const
 bool json_interface::parse(QByteArray json_string)
 {
     clear();
-    m_json = cJSON_Parse((QString::fromUtf8(json_string.data())).toLocal8Bit());
+    //m_json = cJSON_Parse((QString::fromUtf8(json_string.data())).toLocal8Bit());
+    m_json = cJSON_Parse(json_string.data());
     if(m_json == NULL)
     {
         m_errorMsg = cJSON_GetErrorPtr();
@@ -84,7 +94,7 @@ bool json_interface::parse(QByteArray json_string)
 
 cJSON *json_interface::parse_create(QByteArray json_string)
 {
-    cJSON *json = cJSON_Parse((QString::fromUtf8(json_string.data())).toLocal8Bit());
+    cJSON *json = cJSON_Parse(json_string.data());
     return  json;
 }
 
@@ -102,7 +112,7 @@ QByteArray json_interface::json_string() const
     if(!is_empty())
     {
         char *str = cJSON_PrintUnformatted(m_json);
-        ar = QString::fromLocal8Bit(str).toUtf8();
+        ar = QByteArray(str);
         free(str);
     }
     return  ar;
@@ -114,7 +124,7 @@ QString json_interface::format_string() const
     if(!is_empty())
     {
         char *str = cJSON_PrintUnformatted(m_json);
-        json_str = QString::fromLocal8Bit(str);
+        json_str = QString::fromUtf8(str);
         free(str);
     }
     return  json_str;
@@ -169,13 +179,13 @@ json_value::json_value(double n)
 json_value::json_value(const QString &s)
 {
     m_type = Type_String;
-    m_value = s;
+    m_value = s.toUtf8();
 }
 
 json_value::json_value(const char *s)
 {
     m_type = Type_String;
-    m_value = (s);
+    m_value = QByteArray(s);
 }
 
 json_value::json_value(const json_value &other)
@@ -186,19 +196,25 @@ json_value::json_value(const json_value &other)
 
 json_value::json_value(int n)
 {
-    m_type = Type_Int;
+    m_type = Type_Int32;
     m_value = n;
 }
 
-json_value::json_value(quint32 n)
+json_value::json_value(unsigned int n)
 {
-    m_type = Type_UInt;
+    m_type = Type_UInt32;
     m_value = n;
 }
 
-json_value::json_value(qint64 n)
+json_value::json_value(long long n)
 {
-    m_type = Type_Int;
+    m_type = Type_Int64;
+    m_value = n;
+}
+
+json_value::json_value(unsigned long long n)
+{
+    m_type = Type_UInt64;
     m_value = n;
 }
 
@@ -235,14 +251,24 @@ int json_value::toInt() const
     return m_value.toInt();
 }
 
-quint32 json_value::toUint() const
+unsigned int json_value::toUint() const
 {
     return m_value.toUInt();
 }
 
+long long json_value::toInt64() const
+{
+    return m_value.toLongLong();
+}
+
+unsigned long long json_value::toUint64() const
+{
+    return m_value.toULongLong();
+}
+
 QString json_value::toString() const
 {
-    return m_value.toString();
+    return QString::fromUtf8(m_value.toByteArray());
 }
 
 json_object json_value::toObject() const
@@ -253,6 +279,11 @@ json_object json_value::toObject() const
 json_array json_value::toArray() const
 {
     return json_array(m_value.toByteArray());
+}
+
+QByteArray json_value::toByteArray() const
+{
+    return m_value.toByteArray();
 }
 
 json_value::Type_Enum json_value::type() const
@@ -300,31 +331,59 @@ bool json_object::insert(const QString &key, const json_value &value)
     bool ret = true;
     switch (value.type())
     {
-    case json_value::Type_Int:
+    case json_value::Type_Int32:
     {
         if(exist(key))
         {
             cJSON *item = cJSON_CreateNumber(value.toInt());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
         }
         else
         {
             cJSON *item = cJSON_CreateNumber(value.toInt());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
         }
     }
         break;
-    case json_value::Type_UInt:
+    case json_value::Type_UInt32:
     {
         if(exist(key))
         {
             cJSON *item = cJSON_CreateNumber(value.toUint());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
         }
         else
         {
             cJSON *item = cJSON_CreateNumber(value.toUint());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
+        }
+    }
+        break;
+    case json_value::Type_Int64:
+    {
+        if(exist(key))
+        {
+            cJSON *item = cJSON_CreateNumber(value.toInt64());
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
+        }
+        else
+        {
+            cJSON *item = cJSON_CreateNumber(value.toInt64());
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
+        }
+    }
+        break;
+    case json_value::Type_UInt64:
+    {
+        if(exist(key))
+        {
+            cJSON *item = cJSON_CreateNumber(value.toUint64());
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
+        }
+        else
+        {
+            cJSON *item = cJSON_CreateNumber(value.toUint64());
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
         }
     }
         break;
@@ -333,12 +392,12 @@ bool json_object::insert(const QString &key, const json_value &value)
         if(exist(key))
         {
             cJSON *item = cJSON_CreateNumber(value.toDouble());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
         }
         else
         {
             cJSON *item = cJSON_CreateNumber(value.toDouble());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
         }
     }
         break;
@@ -346,13 +405,13 @@ bool json_object::insert(const QString &key, const json_value &value)
     {
         if(exist(key))
         {
-            cJSON *item = cJSON_CreateString(value.toString().toLocal8Bit().data());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+            cJSON *item = cJSON_CreateString(value.toByteArray().data());
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
         }
         else
         {
-            cJSON *item = cJSON_CreateString(value.toString().toLocal8Bit().data());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+            cJSON *item = cJSON_CreateString(value.toByteArray().data());
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
         }
     }
         break;
@@ -361,12 +420,12 @@ bool json_object::insert(const QString &key, const json_value &value)
         if(exist(key))
         {
             cJSON *item = cJSON_CreateBool(value.toBool());
-            cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+            cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
         }
         else
         {
             cJSON *item = cJSON_CreateBool(value.toBool());
-            cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+            cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
         }
     }
         break;
@@ -377,11 +436,11 @@ bool json_object::insert(const QString &key, const json_value &value)
         {
             if(exist(key))
             {
-                cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+                cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
             }
             else
             {
-                cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+                cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
             }
         }
         else
@@ -398,11 +457,11 @@ bool json_object::insert(const QString &key, const json_value &value)
         {
             if(exist(key))
             {
-                cJSON_ReplaceItemInObject(m_json, key.toStdString().c_str(), item);
+                cJSON_ReplaceItemInObject(m_json, key.toUtf8().data(), item);
             }
             else
             {
-                cJSON_AddItemToObject(m_json, key.toStdString().c_str(), item);
+                cJSON_AddItemToObject(m_json, key.toUtf8().data(), item);
             }
         }
         else
@@ -430,7 +489,7 @@ json_value json_object::value(const QString &key)
 
     if(!is_empty() && exist(key))
     {
-        cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
+        cJSON *item = cJSON_GetObjectItem(m_json, key.toUtf8().data());
         if(cJSON_IsTrue(item))
         {
             value = true;
@@ -445,16 +504,16 @@ json_value json_object::value(const QString &key)
         }
         else if(cJSON_IsString(item))
         {
-            value = QString::fromLocal8Bit(item->valuestring);
+            value = item->valuestring;
         }
         else if(cJSON_IsObject(item))
         {
-            cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
+            cJSON *item = cJSON_GetObjectItem(m_json, key.toUtf8().data());
             value = json_object(item);
         }
         else if(cJSON_IsArray(item))
         {
-            cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
+            cJSON *item = cJSON_GetObjectItem(m_json, key.toUtf8().data());
             value = json_array(item);
         }
         else
@@ -472,7 +531,7 @@ json_object json_object::object(const QString &key)
         return json_object();
     }
 
-    cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
+    cJSON *item = cJSON_GetObjectItem(m_json, key.toUtf8().data());
     if(item == NULL || item->type != cJSON_Object)
         return  json_object();
 
@@ -486,7 +545,7 @@ json_array json_object::array(const QString &key)
         return json_array();
     }
 
-    cJSON *item = cJSON_GetObjectItem(m_json, key.toStdString().c_str());
+    cJSON *item = cJSON_GetObjectItem(m_json, key.toUtf8().data());
     if(item == NULL || item->type != cJSON_Array)
         return  json_array();
 
@@ -513,7 +572,7 @@ bool json_object::exist(QString key)
     if(is_empty())
         return  false;
 
-    return (cJSON_HasObjectItem(m_json, key.toStdString().c_str()) == 1 );
+    return (cJSON_HasObjectItem(m_json, key.toUtf8().data()) == 1 );
 }
 
 void json_object::remove(const QString &key)
@@ -521,7 +580,7 @@ void json_object::remove(const QString &key)
     if(is_empty())
         return;
 
-    cJSON_DeleteItemFromObject(m_json, key.toStdString().c_str());
+    cJSON_DeleteItemFromObject(m_json, key.toUtf8().data());
 }
 
 json_array::json_array():json_interface()
@@ -556,15 +615,27 @@ bool json_array::append(const json_value &value)
     bool ret = true;
     switch (value.type())
     {
-    case json_value::Type_Int:
+    case json_value::Type_Int32:
     {
         cJSON *item = cJSON_CreateNumber(value.toInt());
         cJSON_AddItemToArray(m_json, item);
     }
         break;
-    case json_value::Type_UInt:
+    case json_value::Type_UInt32:
     {
         cJSON *item = cJSON_CreateNumber(value.toUint());
+        cJSON_AddItemToArray(m_json, item);
+    }
+        break;
+    case json_value::Type_Int64:
+    {
+        cJSON *item = cJSON_CreateNumber(value.toInt64());
+        cJSON_AddItemToArray(m_json, item);
+    }
+        break;
+    case json_value::Type_UInt64:
+    {
+        cJSON *item = cJSON_CreateNumber(value.toUint64());
         cJSON_AddItemToArray(m_json, item);
     }
         break;
@@ -576,7 +647,7 @@ bool json_array::append(const json_value &value)
         break;
     case json_value::Type_String:
     {
-        cJSON *item = cJSON_CreateString(value.toString().toLocal8Bit().data());
+        cJSON *item = cJSON_CreateString(value.toByteArray().data());
         cJSON_AddItemToArray(m_json, item);
     }
         break;
@@ -669,7 +740,7 @@ json_value json_array::value(int index) const
     }
     else if(cJSON_IsString(item))
     {
-        value = QString::fromLocal8Bit(item->valuestring);
+        value = item->valuestring;
     }
     else if(cJSON_IsObject(item))
     {
@@ -742,9 +813,24 @@ bool json_array::replace(int index, const json_value &value)
     cJSON *item = NULL;
     switch (value.type())
     {
-    case json_value::Type_Int:
+    case json_value::Type_Int32:
     {
         item = cJSON_CreateNumber(value.toInt());
+    }
+        break;
+    case json_value::Type_UInt32:
+    {
+        item = cJSON_CreateNumber(value.toUint());
+    }
+        break;
+    case json_value::Type_Int64:
+    {
+        item = cJSON_CreateNumber(value.toInt64());
+    }
+        break;
+    case json_value::Type_UInt64:
+    {
+        item = cJSON_CreateNumber(value.toUint64());
     }
         break;
     case json_value::Type_Double:
@@ -754,7 +840,7 @@ bool json_array::replace(int index, const json_value &value)
         break;
     case json_value::Type_String:
     {
-        item = cJSON_CreateString(value.toString().toLocal8Bit().data());
+        item = cJSON_CreateString(value.toByteArray().data());
     }
         break;
     case json_value::Type_Bool:
