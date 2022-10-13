@@ -59,8 +59,10 @@ public:
     {
         Type_Unvalid,
         Type_Bool,
-        Type_Int,
-        Type_UInt,
+        Type_Int32,
+        Type_UInt32,
+        Type_Int64,
+        Type_UInt64,
         Type_Double,
         Type_String,
         Type_Object,
@@ -73,18 +75,22 @@ public:
     json_value(const char * s);
     json_value(const json_value & other);
     json_value(int n);
-    json_value(quint32 n);
-    json_value(qint64 n);
+    json_value(unsigned int n);
+    json_value(long long n);
+    json_value(unsigned long long n);
     json_value(const json_object &obj);
     json_value(const json_array &a);
 
     bool toBool() const;
     double toDouble() const;
     int toInt() const;
-    quint32 toUint() const;
+    unsigned int toUint() const;
+    long long toInt64() const;
+    unsigned long long toUint64() const;
     QString toString() const;
     json_object toObject() const;
     json_array toArray() const;
+    QByteArray toByteArray() const;
 
     Type_Enum type() const;
     bool is_empty() const;
