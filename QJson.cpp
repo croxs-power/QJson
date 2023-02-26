@@ -64,6 +64,10 @@ bool json_interface::operator !() const
 
 json_interface &json_interface::operator=(const json_interface &json)
 {
+    if(m_json)
+    {
+        clear();
+    }
     if(!json.is_empty())
     {
         parse(json.json_string());
